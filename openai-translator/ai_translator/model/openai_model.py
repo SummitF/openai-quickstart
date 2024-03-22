@@ -7,11 +7,19 @@ import openai
 from model import Model
 from utils import LOG
 from openai import OpenAI
+import httpx
 
 class OpenAIModel(Model):
     def __init__(self, model: str, api_key: str):
         self.model = model
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client =  OpenAI(
+            base_url="https://api.xty.app/v1",
+            api_key=os.getenv("OPENAI_API_KEY"),
+            http_client=httpx.Client(
+                base_url="https://api.xty.app/v1",
+                follow_redirects=True,
+            )
+        )
 
     def make_request(self, prompt):
         attempts = 0

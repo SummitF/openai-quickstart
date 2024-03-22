@@ -23,4 +23,5 @@ class PDFTranslator:
                 # Update the content in self.book.pages directly
                 self.book.pages[page_idx].contents[content_idx].set_translation(translation, status)
 
-        self.writer.save_translated_book(self.book, output_file_path, file_format)
+        return self.writer.save_translated_book(self.book, target_language, output_file_path, file_format)
+        
