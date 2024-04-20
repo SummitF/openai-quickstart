@@ -1,5 +1,9 @@
 from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
+from langchain.schema.messages import AIMessage
+from langchain_community.llms.chatglm3 import ChatGLM3
+from langchain_community.llms import ChatGLM
+from langchain_core.prompts import PromptTemplate
 
 from langchain.prompts.chat import (
     ChatPromptTemplate,
@@ -9,6 +13,10 @@ from langchain.prompts.chat import (
 
 from utils import LOG
 
+# support models
+# chatglm3-6b
+# chatglm2-6b
+# gpt-*
 class TranslationChain:
     def __init__(self, model_name: str = "gpt-3.5-turbo", verbose: bool = True):
         
@@ -27,11 +35,35 @@ class TranslationChain:
         chat_prompt_template = ChatPromptTemplate.from_messages(
             [system_message_prompt, human_message_prompt]
         )
+        
+        if model_name.startswith("gpt"):
+            # 为了翻译结果的稳定性，将 temperature 设置为 0
+            chat = ChatOpenAI(model_name=model_name, temperature=0, verbose=verbose)
 
-        # 为了翻译结果的稳定性，将 temperature 设置为 0
-        chat = ChatOpenAI(model_name=model_name, temperature=0, verbose=verbose)
-
-        self.chain = LLMChain(llm=chat, prompt=chat_prompt_template, verbose=verbose)
+            self.chain = LLMChain(llm=chat, prompt=chat_prompt_template, verbose=verbose)
+        elif model_name == "chatglm3-6B":
+            
+            endpoint_url = "http://127.0.0.1:8000/v1/chat/completions"
+            llm = ChatGLM3(
+                endpoint_url=endpoint_url,
+                max_tokens=80000,
+                # prefix_messages=messages,
+                # top_p=0.9,
+                temperature=0
+            )
+            self.chain = LLMChain(llm=llm, prompt=chat_prompt_template, verbose=verbose)
+        elif model_name == "chatglm2-6B":
+            endpoint_url = "http://127.0.0.1:8001"
+            llm = ChatGLM(
+                endpoint_url=endpoint_url,
+                max_token=80000,
+                # top_p=0.9,
+                temperature=0,
+                model_kwargs={"sample_model_args": False},
+            )
+            self.chain = LLMChain(llm=llm, prompt=chat_prompt_template, verbose=verbose)
+        else:
+            LOG.error(f"Unsupported model: {model_name}")
 
     def run(self, text: str, source_language: str, target_language: str) -> (str, bool):
         result = ""
